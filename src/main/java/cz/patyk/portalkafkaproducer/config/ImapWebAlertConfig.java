@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 @Data
 @Configuration
 @ConfigurationProperties("imap.web-alert")
-public class ImapWebAlert {
+public class ImapWebAlertConfig {
     private String username;
     private String host;
     private Integer port;
