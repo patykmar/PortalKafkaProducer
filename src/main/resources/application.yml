@@ -1,0 +1,9 @@
+imap:
+  webAlert:
+    username: 'webalerts@patyk.cz'
+    host: 'mail.patyk.cz'
+
+kafka:
+  brokerIp: '192.168.168.168'
+  brokerPort: 9092
+  topic: 'general-imap-topic'
