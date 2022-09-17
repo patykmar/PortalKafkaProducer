@@ -1,7 +1,9 @@
 imap:
-  webAlert:
+  web-alert:
     username: 'webalerts@patyk.cz'
     host: 'mail.patyk.cz'
+    port: 143
+    password: 'someStrongPassword'
 
 kafka:
   brokerIp: '192.168.168.168'
