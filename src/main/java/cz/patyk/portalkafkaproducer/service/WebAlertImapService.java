@@ -1,6 +1,9 @@
-package cz.patyk.portalkafkaproducer.imap;
+package cz.patyk.portalkafkaproducer.service;
 
 import cz.patyk.portalkafkaproducer.config.ImapWebAlertConfig;
+import cz.patyk.portalkafkaproducer.dto.ImapMessageDto;
+import cz.patyk.portalkafkaproducer.exception.EmailMappingException;
+import cz.patyk.portalkafkaproducer.mapper.ImapMessageMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,17 +16,21 @@ import javax.mail.NoSuchProviderException;
 import javax.mail.Session;
 import javax.mail.Store;
 import javax.mail.search.FlagTerm;
+import java.io.IOException;
+import java.util.List;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class WebAlertImapHandler {
+public class WebAlertImapService {
     private static final String PROTOCOL_IMAPS = "imaps";
     private static final String FOLDER_INBOX = "Inbox";
     private final ImapWebAlertConfig imapWebAlertConfig;
+    private final ImapMessageMapper imapMessageMapper;
 
-    public void checkEmail() {
+    public List<ImapMessageDto> checkEmail() {
         Session emailSession = Session.getDefaultInstance(provideImapProperties());
 
         try {
@@ -37,9 +44,17 @@ public class WebAlertImapHandler {
             inbox.open(Folder.READ_ONLY);
 
             Message[] messages = inbox.search(new FlagTerm(new Flags(Flags.Flag.SEEN), false));
-
             log.info("Messages count: {}", messages.length);
 
+            return Stream.of(messages)
+                    .map(message -> {
+                        try {
+                            return imapMessageMapper.toImapMessageDto(message);
+                        } catch (MessagingException | IOException e) {
+                            throw new EmailMappingException(e);
+                        }
+                    })
+                    .toList();
 
         } catch (NoSuchProviderException e) {
             log.error("Unable get store {}", PROTOCOL_IMAPS, e);
@@ -48,8 +63,10 @@ public class WebAlertImapHandler {
                     imapWebAlertConfig.getHost(),
                     imapWebAlertConfig.getUsername(),
                     imapWebAlertConfig.getPassword(), e);
+        } catch (EmailMappingException e) {
+            log.error("Error while mapping message to ImapMessageDto");
         }
-
+        return List.of();
 
     }
 
