@@ -31,22 +31,8 @@ public class WebAlertImapService {
     private final ImapMessageMapper imapMessageMapper;
 
     public List<ImapMessageDto> checkEmail() {
-        Session emailSession = Session.getDefaultInstance(provideImapProperties());
-
         try {
-            Store store = emailSession.getStore(PROTOCOL_IMAPS);
-            store.connect(
-                    imapWebAlertConfig.getHost(),
-                    imapWebAlertConfig.getUsername(),
-                    imapWebAlertConfig.getPassword()
-            );
-            Folder inbox = store.getFolder(FOLDER_INBOX);
-            inbox.open(Folder.READ_ONLY);
-
-            Message[] messages = inbox.search(new FlagTerm(new Flags(Flags.Flag.SEEN), false));
-            log.info("Messages count: {}", messages.length);
-
-            return Stream.of(messages)
+            return collectMainFromInbox()
                     .map(message -> {
                         try {
                             return imapMessageMapper.toImapMessageDto(message);
@@ -68,6 +54,23 @@ public class WebAlertImapService {
         }
         return List.of();
 
+    }
+
+    public Stream<Message> collectMainFromInbox() throws MessagingException {
+        Session emailSession = Session.getDefaultInstance(provideImapProperties());
+        Store store = emailSession.getStore(PROTOCOL_IMAPS);
+        store.connect(
+                imapWebAlertConfig.getHost(),
+                imapWebAlertConfig.getUsername(),
+                imapWebAlertConfig.getPassword()
+        );
+        Folder inbox = store.getFolder(FOLDER_INBOX);
+        inbox.open(Folder.READ_ONLY);
+
+        Message[] messages = inbox.search(new FlagTerm(new Flags(Flags.Flag.SEEN), false));
+        log.info("Messages count: {}", messages.length);
+
+        return Stream.of(messages);
     }
 
     private Properties provideImapProperties() {
